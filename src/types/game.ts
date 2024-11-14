@@ -3,6 +3,12 @@ export interface Vote {
   user: string;
   game: string;
   score: number;
+  expand?: {
+    user?: {
+      name: string;
+      avatarUrl: string;
+    }
+  }
 }
 
 export interface Game {

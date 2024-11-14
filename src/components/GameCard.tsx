@@ -142,8 +142,41 @@ export const GameCard: React.FC<GameCardProps> = ({
                 className="overflow-hidden"
               >
                 <div className="p-4 md:p-6 border-t">
-                  <h4 className="font-semibold mb-2">Description</h4>
-                  <p className="text-sm text-gray-600">{game.description}</p>
+                  <div className="flex flex-col md:flex-row gap-6">
+                    <div className="flex-1">
+                      <h4 className="font-semibold mb-2">Description</h4>
+                      <p className="text-sm text-gray-600">{game.description}</p>
+                    </div>
+                    
+                    <div className="w-full md:w-64 border-t md:border-l md:border-t-0 pt-4 md:pt-0 md:pl-6">
+                      <h4 className="font-semibold mb-3">Votes</h4>
+                      <div className="space-y-3">
+                        {game.expand?.votes?.map((vote: Vote) => (
+                          <div key={vote.id} className="flex items-center gap-3">
+                            <div className="relative w-8 h-8">
+                              <Image
+                                src={vote.expand?.user?.avatarUrl || '/default-avatar.png'}
+                                alt={vote.expand?.user?.name || 'User'}
+                                fill
+                                className="rounded-full object-cover"
+                              />
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm font-medium">
+                                {vote.expand?.user?.name || 'Anonymous'}
+                              </p>
+                            </div>
+                            <div className="text-sm font-semibold">
+                              {vote.score}
+                            </div>
+                          </div>
+                        ))}
+                        {(!game.expand?.votes || game.expand.votes.length === 0) && (
+                          <p className="text-sm text-gray-500 italic">No votes yet</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </motion.div>
             )}

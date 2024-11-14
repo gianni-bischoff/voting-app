@@ -70,7 +70,7 @@ const GameVotingApp = () => {
     try {
       const records = await pb.collection('games').getFullList({
         requestKey: null,
-        expand: 'votes'
+        expand: 'votes,votes.user'
       });
       
       const typedGames = records.map(record => ({
@@ -82,7 +82,16 @@ const GameVotingApp = () => {
         submitted_by: record.submitted_by,
         isActive: record.isActive || false,
         expand: {
-          votes: record.expand?.votes || []
+          votes: record.expand?.votes?.map((vote: any) => ({
+            id: vote.id,
+            score: vote.score,
+            expand: {
+              user: vote.expand?.user ? {
+                name: vote.expand.user.name,
+                avatarUrl: vote.expand.user.avatarUrl
+              } : null
+            }
+          })) || []
         }
       }));
       
