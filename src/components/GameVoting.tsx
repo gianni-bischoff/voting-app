@@ -157,6 +157,7 @@ const GameVotingApp = () => {
         if (existingVote) {
           let voteObject = await pb.collection('votes').update(existingVote.id, { score });
           await pb.collection('games').update(gameId, {
+            requestKey: null,
             "votes+": voteObject.id
           });
         } else {
@@ -222,6 +223,7 @@ const GameVotingApp = () => {
   const handleToggleActive = async (gameId: string, isActive: boolean) => {
     try {
       await pb.collection('games').update(gameId, {
+        requestKey: null,
         isActive: isActive
       });
       setGames(games.map(game => 
