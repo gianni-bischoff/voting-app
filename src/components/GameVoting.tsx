@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Trash2, Plus, ThumbsUp } from 'lucide-react';
+import { Trash2, Plus, ThumbsUp, ExternalLink } from 'lucide-react';
 import { Slider } from "@/components/ui/slider"
 import Image from "next/image"
 import {
@@ -17,6 +17,14 @@ import {
 import { motion } from "framer-motion";
 import { useRouter } from 'next/navigation';
 import { useAuth, pb } from '@/lib/auth';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
 
 // Add interfaces
 interface Vote {
@@ -61,10 +69,16 @@ const GameVotingApp = () => {
   const { user } = useAuth();
   const router = useRouter();
   const [games, setGames] = useState<Game[]>([]);
-  const [newGame, setNewGame] = useState("");
+  const [newGameData, setNewGameData] = useState({
+    name: "",
+    description: "",
+    url: "",
+    picture_url: "",
+  });
   const [sortOrder, setSortOrder] = useState("none");
   const [userVotes, setUserVotes] = useState<Record<string, number>>({});
   const [voteTimeout, setVoteTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   // Update useEffect with proper dependency array
   useEffect(() => {
@@ -146,16 +160,16 @@ const GameVotingApp = () => {
     }
   };
 
-  // Add new game
+  // Replace handleAddGame with this new version
   const handleAddGame = async () => {
-    if (newGame.trim()) {
+    if (newGameData.name.trim()) {
       try {
         const data = {
-          name: newGame.trim(),
-          description: "",
-          url: "",
-          picture_url: "",
-          submitted_by: "",
+          name: newGameData.name.trim(),
+          description: newGameData.description,
+          url: newGameData.url,
+          picture_url: newGameData.picture_url,
+          submitted_by: user?.id || "",
           votes: [],
           averageVote: 0
         };
@@ -167,7 +181,14 @@ const GameVotingApp = () => {
           id: record.id,
           ...data
         }]);
-        setNewGame("");
+        // Reset form and close dialog
+        setNewGameData({
+          name: "",
+          description: "",
+          url: "",
+          picture_url: "",
+        });
+        setDialogOpen(false);
       } catch (error) {
         console.error('Error adding game:', error);
       }
@@ -266,17 +287,67 @@ const GameVotingApp = () => {
         {/* Manager controls on left */}
         <div>
           {user && user.isManager && (
-            <div className="flex gap-4 items-center">
-              <Input
-                placeholder="Enter game name"
-                value={newGame}
-                onChange={(e) => setNewGame(e.target.value)}
-                className="w-[300px]"
-              />
-              <Button onClick={handleAddGame}>
-                <Plus className="mr-2 h-4 w-4" /> Add Game
-              </Button>
-            </div>
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" /> Add Game
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Add New Game</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="name" className="text-right">
+                      Name
+                    </Label>
+                    <Input
+                      id="name"
+                      value={newGameData.name}
+                      onChange={(e) => setNewGameData(prev => ({...prev, name: e.target.value}))}
+                      className="col-span-3"
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="description" className="text-right">
+                      Description
+                    </Label>
+                    <Input
+                      id="description"
+                      value={newGameData.description}
+                      onChange={(e) => setNewGameData(prev => ({...prev, description: e.target.value}))}
+                      className="col-span-3"
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="url" className="text-right">
+                      URL
+                    </Label>
+                    <Input
+                      id="url"
+                      value={newGameData.url}
+                      onChange={(e) => setNewGameData(prev => ({...prev, url: e.target.value}))}
+                      className="col-span-3"
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="picture" className="text-right">
+                      Picture URL
+                    </Label>
+                    <Input
+                      id="picture"
+                      value={newGameData.picture_url}
+                      onChange={(e) => setNewGameData(prev => ({...prev, picture_url: e.target.value}))}
+                      className="col-span-3"
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <Button onClick={handleAddGame}>Add Game</Button>
+                </div>
+              </DialogContent>
+            </Dialog>
           )}
         </div>
 
@@ -351,17 +422,28 @@ const GameVotingApp = () => {
                   )}
                 </div>
 
-                {user && user.isManager && (
+                <div className="flex justify-end gap-2">
                   <Button
-                    variant="destructive"
+                    variant="outline"
                     size="sm"
-                    onClick={() => handleRemoveGame(game.id)}
+                    onClick={() => window.open(game.url, '_blank')}
                     className="self-end"
                   >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Remove Game
+                    <ExternalLink className="h-4 w-4" />
                   </Button>
-                )}
+
+                  {user && user.isManager && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleRemoveGame(game.id)}
+                      className="self-end"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Remove Game
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           </Card>
