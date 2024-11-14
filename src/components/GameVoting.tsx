@@ -237,8 +237,8 @@ const GameVotingApp = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-6">
-      <div className="h-16 mt-8 flex items-center justify-between">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6">
+      <div className="h-auto sm:h-16 mt-4 sm:mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-0">
         <div>
           {user && user.isManager && (
             <AddGameDialog
@@ -251,7 +251,7 @@ const GameVotingApp = () => {
           )}
         </div>
 
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-2 items-center w-full sm:w-auto">
           <Button
             variant="outline"
             size="icon"
@@ -264,7 +264,7 @@ const GameVotingApp = () => {
           </Button>
           
           <Select value={sortOrder} onValueChange={handleSort}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue placeholder="Sort by..." />
             </SelectTrigger>
             <SelectContent>

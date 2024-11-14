@@ -34,8 +34,8 @@ export const GameCard: React.FC<GameCardProps> = ({
         game.isActive ? 'ring-2 ring-primary shadow-lg' : 'hover:shadow-lg'
       }`}>
         <div className="flex flex-col">
-          <div className="flex h-[200px]">
-            <div className="relative w-1/2 overflow-hidden group">
+          <div className="flex flex-col md:flex-row">
+            <div className="relative w-full md:w-1/2 h-[200px] overflow-hidden group">
               <Image
                 src={game.picture_url}
                 alt={game.name}
@@ -48,13 +48,13 @@ export const GameCard: React.FC<GameCardProps> = ({
                 </div>
               )}
               <div className="absolute inset-0 flex items-center justify-center">
-                <h3 className="text-2xl font-bold text-white drop-shadow-lg">
+                <h3 className="text-2xl font-bold text-white drop-shadow-lg text-center px-4">
                   {game.name}
                 </h3>
               </div>
             </div>
 
-            <div className="w-1/2 p-6 flex flex-col justify-between">
+            <div className="w-full md:w-1/2 p-4 md:p-6 flex flex-col justify-between">
               <div className="space-y-4">
                 {user ? (
                   <>
@@ -65,7 +65,7 @@ export const GameCard: React.FC<GameCardProps> = ({
                         initial={{ scale: 0.8, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         transition={{ duration: 0.3, type: "spring", bounce: 0.4 }}
-                        className="text-lg font-bold"
+                        className="text-base md:text-lg font-bold"
                       >
                         {userVotes[game.id] !== undefined ? 
                           `${userVotes[game.id]} (Avg. ${calculateAverageVote(game)})` : 
@@ -90,12 +90,11 @@ export const GameCard: React.FC<GameCardProps> = ({
                 )}
               </div>
 
-              <div className="flex justify-end gap-2">
+              <div className="flex flex-wrap gap-2 justify-end mt-4">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => window.open(game.url, '_blank')}
-                  className="self-end"
                 >
                   <ExternalLink className="h-4 w-4" />
                 </Button>
@@ -106,7 +105,6 @@ export const GameCard: React.FC<GameCardProps> = ({
                       variant={game.isActive ? "default" : "outline"}
                       size="sm"
                       onClick={() => onToggleActive?.(game.id, !game.isActive)}
-                      className="self-end"
                     >
                       {game.isActive ? "Active" : "Inactive"}
                     </Button>
@@ -114,10 +112,9 @@ export const GameCard: React.FC<GameCardProps> = ({
                       variant="destructive"
                       size="sm"
                       onClick={() => onRemove(game.id)}
-                      className="self-end"
                     >
                       <Trash2 className="h-4 w-4 mr-2" />
-                      Remove Game
+                      <span className="hidden sm:inline">Remove Game</span>
                     </Button>
                   </>
                 )}
@@ -134,7 +131,7 @@ export const GameCard: React.FC<GameCardProps> = ({
                 transition={{ duration: 0.3 }}
                 className="overflow-hidden"
               >
-                <div className="p-6 border-t">
+                <div className="p-4 md:p-6 border-t">
                   <h4 className="font-semibold mb-2">Description</h4>
                   <p className="text-sm text-gray-600">{game.description}</p>
                 </div>
