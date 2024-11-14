@@ -14,6 +14,7 @@ import { useAuth, pb } from '@/lib/auth';
 import { GameCard } from '@/components/GameCard';
 import { AddGameDialog } from '@/components/AddGameDialog';
 import { Game, Vote } from '@/types/game';
+import { RotateCw } from "lucide-react";
 
 const GameVotingApp = () => {
   const { user } = useAuth();
@@ -77,6 +78,7 @@ const GameVotingApp = () => {
         url: record.url,
         picture_url: record.picture_url,
         submitted_by: record.submitted_by,
+        isActive: record.isActive || false,
         expand: {
           votes: record.expand?.votes || []
         }
@@ -108,6 +110,7 @@ const GameVotingApp = () => {
         });
         setGames([...games, {
           id: record.id,
+          isActive: false,
           ...data
         }]);
         setNewGameData({
@@ -181,23 +184,54 @@ const GameVotingApp = () => {
   };
 
   const applySortOrder = (games: Game[], order: string) => {
-    switch (order) {
-      case "highest":
-        games.sort((a, b) => calculateAverageVote(b) - calculateAverageVote(a));
-        break;
-      case "lowest":
-        games.sort((a, b) => calculateAverageVote(a) - calculateAverageVote(b));
-        break;
-      case "alphabetical":
-        games.sort((a, b) => a.name.localeCompare(b.name));
-        break;
-    }
+    games.sort((a, b) => {
+      if (a.isActive && !b.isActive) return -1;
+      if (!a.isActive && b.isActive) return 1;
+      return 0;
+    });
+
+    const activeGames = games.filter(g => g.isActive);
+    const inactiveGames = games.filter(g => !g.isActive);
+
+    const sortGames = (gamesArray: Game[]) => {
+      switch (order) {
+        case "highest":
+          gamesArray.sort((a, b) => calculateAverageVote(b) - calculateAverageVote(a));
+          break;
+        case "lowest":
+          gamesArray.sort((a, b) => calculateAverageVote(a) - calculateAverageVote(b));
+          break;
+        case "alphabetical":
+          gamesArray.sort((a, b) => a.name.localeCompare(b.name));
+          break;
+      }
+    };
+
+    sortGames(activeGames);
+    sortGames(inactiveGames);
+
+    games.splice(0, games.length, ...activeGames, ...inactiveGames);
   };
 
   const calculateAverageVote = (game: Game) => {
     if (!game.expand?.votes || game.expand.votes.length === 0) return 0;
     const sum = game.expand.votes.reduce((acc, vote) => acc + vote.score, 0);
     return parseFloat((sum / game.expand.votes.length).toFixed(1));
+  };
+
+  const handleToggleActive = async (gameId: string, isActive: boolean) => {
+    try {
+      await pb.collection('games').update(gameId, {
+        isActive: isActive
+      });
+      setGames(games.map(game => 
+        game.id === gameId ? { ...game, isActive } : game
+      ));
+      handleSort(sortOrder);
+      await loadGames();
+    } catch (error) {
+      console.error('Error toggling game active state:', error);
+    }
   };
 
   return (
@@ -215,7 +249,18 @@ const GameVotingApp = () => {
           )}
         </div>
 
-        <div>
+        <div className="flex gap-2 items-center">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => {
+              loadGames();
+              handleSort(sortOrder);
+            }}
+          >
+            <RotateCw className="h-4 w-4" />
+          </Button>
+          
           <Select value={sortOrder} onValueChange={handleSort}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Sort by..." />
@@ -239,6 +284,7 @@ const GameVotingApp = () => {
             userVotes={userVotes}
             onVote={handleVote}
             onRemove={handleRemoveGame}
+            onToggleActive={handleToggleActive}
             calculateAverageVote={calculateAverageVote}
           />
         ))}

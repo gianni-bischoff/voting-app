@@ -12,6 +12,7 @@ export interface Game {
   url: string;
   picture_url: string;
   submitted_by: string;
+  isActive: boolean;
   expand?: {
     votes: Vote[];
   };
