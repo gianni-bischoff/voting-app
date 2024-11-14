@@ -3,8 +3,6 @@ services:
     image: ghcr.io/muchobien/pocketbase:latest
     container_name: pocketbase_voting
     restart: unless-stopped
-    ports:
-      - "8090:8090"
     volumes:
       - pocketbase_data_voting:/pb_data
     environment:
