@@ -53,6 +53,16 @@
           "exceptDomains": null,
           "onlyDomains": null
         }
+      },
+      {
+        "system": false,
+        "id": "iiccd8tg",
+        "name": "isManager",
+        "type": "bool",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {}
       }
     ],
     "indexes": [],
@@ -165,11 +175,11 @@
       }
     ],
     "indexes": [],
-    "listRule": "",
-    "viewRule": "",
-    "createRule": "",
-    "updateRule": "",
-    "deleteRule": "",
+    "listRule": "@request.auth.id != \"\"",
+    "viewRule": "@request.auth.id != \"\"",
+    "createRule": "@request.auth.isManager = true",
+    "updateRule": "@request.auth.isManager = true",
+    "deleteRule": "@request.auth.isManager = true",
     "options": {}
   },
   {
@@ -226,11 +236,11 @@
       }
     ],
     "indexes": [],
-    "listRule": "",
-    "viewRule": "",
-    "createRule": "",
-    "updateRule": "",
-    "deleteRule": "",
+    "listRule": "@request.auth.id != \"\"",
+    "viewRule": "@request.auth.id != \"\"",
+    "createRule": "@request.auth.id = user.id",
+    "updateRule": "@request.auth.id = user.id",
+    "deleteRule": "@request.auth.id = user.id",
     "options": {}
   }
 ]
