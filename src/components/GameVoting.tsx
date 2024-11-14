@@ -66,10 +66,41 @@ const GameVotingApp = () => {
   const [userVotes, setUserVotes] = useState<Record<string, number>>({});
   const [voteTimeout, setVoteTimeout] = useState<NodeJS.Timeout | null>(null);
 
-  // Add useEffect to fetch games
+  // Update useEffect with proper dependency array
   useEffect(() => {
-    loadGames();
-  }, []);
+    loadInitialData();
+  }, [user]);
+
+  // Move the loading logic to a separate function
+  const loadInitialData = async () => {
+    if (user) {
+      await Promise.all([loadGames(), loadUserVotes()]);
+    } else {
+      await loadGames();
+      setUserVotes({}); // Reset votes when user logs out
+    }
+  };
+
+  // Add function to load user votes
+  const loadUserVotes = async () => {
+    if (!user) return;
+    
+    try {
+      const userVoteRecords = await pb.collection('votes').getFullList({
+        requestKey: null,
+        filter: `user = "${user.id}"`,
+      });
+      
+      const votesMap = userVoteRecords.reduce((acc, vote) => ({
+        ...acc,
+        [vote.game]: vote.score
+      }), {});
+      
+      setUserVotes(votesMap);
+    } catch (error) {
+      console.error('Error loading user votes:', error);
+    }
+  };
 
   // Load games from PocketBase
   const loadGames = async () => {
@@ -229,38 +260,44 @@ const GameVotingApp = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-6 mt-8">
-      {/* Manager controls */}
-      {user && user.isManager && (
-        <div className="flex gap-4 items-center">
-          <Input
-            placeholder="Enter game name"
-            value={newGame}
-            onChange={(e) => setNewGame(e.target.value)}
-            className="max-w-md"
-          />
-          <Button onClick={handleAddGame}>
-            <Plus className="mr-2 h-4 w-4" /> Add Game
-          </Button>
+    <div className="max-w-6xl mx-auto px-6">
+      {/* Manager controls and sort in same row */}
+      <div className="h-16 mt-8 flex items-center justify-between">
+        {/* Manager controls on left */}
+        <div>
+          {user && user.isManager && (
+            <div className="flex gap-4 items-center">
+              <Input
+                placeholder="Enter game name"
+                value={newGame}
+                onChange={(e) => setNewGame(e.target.value)}
+                className="w-[300px]"
+              />
+              <Button onClick={handleAddGame}>
+                <Plus className="mr-2 h-4 w-4" /> Add Game
+              </Button>
+            </div>
+          )}
         </div>
-      )}
 
-      {/* Sort controls available to all users */}
-      <div className="flex justify-end mb-8">
-        <Select value={sortOrder} onValueChange={handleSort}>
-          <SelectTrigger className="w-[180px] ml-auto">
-            <SelectValue placeholder="Sort by..." />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">Default</SelectItem>
-            <SelectItem value="highest">Highest Rated</SelectItem>
-            <SelectItem value="lowest">Lowest Rated</SelectItem>
-            <SelectItem value="alphabetical">Alphabetical</SelectItem>
-          </SelectContent>
-        </Select>
+        {/* Sort controls on right */}
+        <div>
+          <Select value={sortOrder} onValueChange={handleSort}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Sort by..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Default</SelectItem>
+              <SelectItem value="highest">Highest Rated</SelectItem>
+              <SelectItem value="lowest">Lowest Rated</SelectItem>
+              <SelectItem value="alphabetical">Alphabetical</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6">
+      {/* Games grid */}
+      <div className="mt-3 grid grid-cols-1 gap-6">
         {games.map((game) => (
           <Card key={game.id} className="p-0 overflow-hidden hover:shadow-lg transition-shadow">
             <div className="flex h-[200px]">
@@ -291,17 +328,17 @@ const GameVotingApp = () => {
                           transition={{ duration: 0.3, type: "spring", bounce: 0.4 }}
                           className="text-lg font-bold"
                         >
-                          {userVotes[game.id] ? 
+                          {userVotes[game.id] !== undefined ? 
                             `${userVotes[game.id]} (Avg. ${calculateAverageVote(game)})` : 
                             `Avg. ${calculateAverageVote(game)}`
                           }
                         </motion.span>
                       </div>
                       <Slider
-                        min={1}
+                        min={0}
                         max={10}
                         step={1}
-                        value={[userVotes[game.id] || 5]}
+                        value={[userVotes[game.id] !== undefined ? userVotes[game.id] : 0]}
                         onValueChange={(value) => handleVote(game.id, value[0])}
                         className="w-full"
                       />
