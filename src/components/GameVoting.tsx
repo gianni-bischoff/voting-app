@@ -64,6 +64,7 @@ interface AuthUser {
   id: string;
   username: string;
   avatarUrl?: string;
+  isManager: boolean;
 }
 
 const GameVotingApp = () => {
@@ -240,7 +241,8 @@ const GameVotingApp = () => {
       setUser({
         id: pb.authStore.model?.id,
         username: pb.authStore.model?.name,
-        avatarUrl: pb.authStore.model?.avatarUrl
+        avatarUrl: pb.authStore.model?.avatarUrl,
+        isManager: pb.authStore.model?.isManager || false
       });
     }
   };
@@ -261,7 +263,8 @@ const GameVotingApp = () => {
         setUser({
           id: authData.record.id,
           username: updatedUser.name,
-          avatarUrl: authData.record.avatarUrl
+          avatarUrl: authData.record.avatarUrl,
+          isManager: updatedUser.isManager || false
         });
       } else {
         console.error('No user record in auth response');
@@ -315,7 +318,7 @@ const GameVotingApp = () => {
       </div>
 
       {/* Only show game management for logged-in users */}
-      {user && (
+      {user && user.isManager && (
         <div className="flex gap-4 items-center mb-8">
           <Input
             placeholder="Enter game name"
@@ -394,7 +397,7 @@ const GameVotingApp = () => {
                   )}
                 </div>
 
-                {user && (
+                {user && user.isManager && (
                   <Button
                     variant="destructive"
                     size="sm"
