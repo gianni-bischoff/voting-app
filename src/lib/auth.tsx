@@ -2,9 +2,9 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import PocketBase from 'pocketbase';
-import { DiscordMetaData } from '@/components/GameVoting';
+import { DiscordMetaData } from '@/types/discord';
 
-export const pb = new PocketBase('http://127.0.0.1:8090');
+export const pb = new PocketBase(process.env.NEXT_PUBLIC_POCKETBASE_URL || 'http://127.0.0.1:8090');
 
 export interface AuthUser {
   id: string;
