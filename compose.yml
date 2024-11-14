@@ -12,10 +12,12 @@ services:
       VIRTUAL_PORT: "8090"
       CERT_NAME: "wildblood.dev"
     healthcheck:
-      test: wget --no-verbose --tries=1 --spider http://localhost:8090/api/health || exit 1
+      test: wget --no-verbose --tries=1 --spider https://pocketbase.wildblood.dev/api/health || exit 1
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - nginx-proxy
 
   nextjs:
     build:
