@@ -21,7 +21,14 @@ import { useRouter } from 'next/navigation';
 // Initialize PocketBase at the top of the file (outside component)
 const pb = new PocketBase('http://127.0.0.1:8090'); // e.g., 'http://127.0.0.1:8090'
 
-// Add interface at the top of the file
+// Add interfaces
+interface Vote {
+  id: string;
+  user: string;
+  game: string;
+  score: number;
+}
+
 interface Game {
   id: string;
   name: string;
@@ -29,8 +36,9 @@ interface Game {
   url: string;
   picture_url: string;
   submitted_by: string;
-  votes: number[];
-  averageVote: number;
+  expand?: {
+    votes: Vote[];
+  };
 }
 
 export interface DiscordMetaData {
@@ -64,8 +72,8 @@ const GameVotingApp = () => {
   const [games, setGames] = useState<Game[]>([]);
   const [newGame, setNewGame] = useState("");
   const [sortOrder, setSortOrder] = useState("none");
-  const [currentRatings, setCurrentRatings] = useState<Record<string, number>>({});
   const [userVotes, setUserVotes] = useState<Record<string, number>>({});
+  const [voteTimeout, setVoteTimeout] = useState<NodeJS.Timeout | null>(null);
 
   // Add useEffect to fetch games
   useEffect(() => {
@@ -75,19 +83,42 @@ const GameVotingApp = () => {
   // Load games from PocketBase
   const loadGames = async () => {
     try {
+      // Get games with vote count
       const records = await pb.collection('games').getFullList({
-        requestKey: null
+        requestKey: null,
+        expand: 'votes'
       });
-      setGames(records.map(record => ({
+
+      console.log(records)
+      
+      // Map votes to their respective games
+      const typedGames = records.map(record => ({
         id: record.id,
         name: record.name,
         description: record.description,
         url: record.url,
         picture_url: record.picture_url,
         submitted_by: record.submitted_by,
-        votes: record.votes || [],
-        averageVote: record.averageVote || 0
-      })));
+        expand: {
+          votes: record.expand?.votes || []
+        }
+      }));
+      
+      // Apply sort order...
+      let sortedGames = [...typedGames];
+      switch (sortOrder) {
+        case "highest":
+          sortedGames.sort((a, b) => calculateAverageVote(b) - calculateAverageVote(a));
+          break;
+        case "lowest":
+          sortedGames.sort((a, b) => calculateAverageVote(a) - calculateAverageVote(b));
+          break;
+        case "alphabetical":
+          sortedGames.sort((a, b) => a.name.localeCompare(b.name));
+          break;
+      }
+      
+      setGames(sortedGames);
     } catch (error) {
       console.error('Error loading games:', error);
     }
@@ -132,44 +163,49 @@ const GameVotingApp = () => {
   };
 
   // Vote for a game
-  const handleVote = async (gameId: string, vote: number) => {
+  const handleVote = async (gameId: string, score: number) => {
     if (!user) {
       alert('Please login to vote');
       return;
     }
-    const previousVote = userVotes[gameId];
-    setCurrentRatings(prev => ({ ...prev, [gameId]: vote }));
-    
-    try {
-      const game = games.find(g => g.id === gameId);
-      if (!game) return;
 
-      let newVotes = [...game.votes];
-      
-      if (previousVote === undefined) {
-        newVotes.push(vote);
-      } else {
-        const voteIndex = newVotes.indexOf(previousVote);
-        newVotes[voteIndex] = vote;
-      }
-      
-      const average = newVotes.reduce((a, b) => a + b, 0) / newVotes.length;
-      
-      const updatedGame = {
-        ...game,
-        votes: newVotes,
-        averageVote: parseFloat(average.toFixed(1))
-      };
+    // Update local state immediately for smooth UI
+    setUserVotes(prev => ({
+      ...prev,
+      [gameId]: score
+    }));
 
-      await pb.collection('games').update(gameId, updatedGame, {
-        requestKey: null
-      });
-      
-      setGames(games.map(g => g.id === gameId ? updatedGame : g));
-      setUserVotes(prev => ({ ...prev, [gameId]: vote }));
-    } catch (error) {
-      console.error('Error updating vote:', error);
+    // Clear any existing timeout
+    if (voteTimeout) {
+      clearTimeout(voteTimeout);
     }
+
+    // Set new timeout
+    const timeout = setTimeout(async () => {
+      try {
+        const existingVote = await pb.collection('votes').getFirstListItem(`user = "${user.id}" && game = "${gameId}"`).catch(() => null);
+
+        if (existingVote) {
+          let voteObject = await pb.collection('votes').update(existingVote.id, { score });
+          await pb.collection('games').update(gameId, {
+            "votes+": voteObject.id
+          });
+        } else {
+          await pb.collection('votes').create({
+            user: user.id,
+            game: gameId,
+            score
+          });
+        }
+
+
+        await loadGames();
+      } catch (error) {
+        console.error('Error updating vote:', error);
+      }
+    }, 1000); // 1 second delay
+
+    setVoteTimeout(timeout);
   };
 
   // Sort games
@@ -179,10 +215,10 @@ const GameVotingApp = () => {
     
     switch (value) {
       case "highest":
-        sortedGames.sort((a, b) => b.averageVote - a.averageVote);
+        sortedGames.sort((a, b) => calculateAverageVote(b) - calculateAverageVote(a));
         break;
       case "lowest":
-        sortedGames.sort((a, b) => a.averageVote - b.averageVote);
+        sortedGames.sort((a, b) => calculateAverageVote(a) - calculateAverageVote(b));
         break;
       case "alphabetical":
         sortedGames.sort((a, b) => a.name.localeCompare(b.name));
@@ -244,6 +280,13 @@ const GameVotingApp = () => {
   const logout = () => {
     pb.authStore.clear();
     setUser(null);
+  };
+
+  // Helper function to calculate average vote
+  const calculateAverageVote = (game: Game) => {
+    if (!game.expand?.votes || game.expand.votes.length === 0) return 0;
+    const sum = game.expand.votes.reduce((acc, vote) => acc + vote.score, 0);
+    return parseFloat((sum / game.expand.votes.length).toFixed(1));
   };
 
   return (
@@ -322,29 +365,33 @@ const GameVotingApp = () => {
                       <div className="flex justify-between items-center">
                         <span className="font-semibold">Rating</span>
                         <motion.span 
-                          key={game.averageVote}
+                          key={game.id}
                           initial={{ scale: 0.8, opacity: 0 }}
                           animate={{ scale: 1, opacity: 1 }}
                           transition={{ duration: 0.3, type: "spring", bounce: 0.4 }}
                           className="text-lg font-bold"
                         >
-                          {currentRatings[game.id] ? `${currentRatings[game.id]} (Avg. ${game.averageVote})` : "No votes"}
+                          {userVotes[game.id] ? 
+                            `${userVotes[game.id]} (Avg. ${calculateAverageVote(game)})` : 
+                            `Avg. ${calculateAverageVote(game)}`
+                          }
                         </motion.span>
                       </div>
                       <Slider
                         min={1}
                         max={10}
                         step={1}
+                        value={[userVotes[game.id] || 5]}
                         onValueChange={(value) => handleVote(game.id, value[0])}
                         className="w-full"
                       />
+                      <p className="text-sm text-gray-500">
+                        {game.expand?.votes?.length || 0} vote{(game.expand?.votes?.length || 0) !== 1 && 's'}
+                      </p>
                     </>
                   ) : (
                     <p className="text-sm text-gray-500">Login to vote</p>
                   )}
-                  <p className="text-sm text-gray-500">
-                    {game.votes.length} {game.votes.length === 1 ? 'vote' : 'votes'}
-                  </p>
                 </div>
 
                 {user && (
