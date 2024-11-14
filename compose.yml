@@ -21,6 +21,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    pull_policy: build
     container_name: nextjs_voting
     restart: unless-stopped
     environment:
