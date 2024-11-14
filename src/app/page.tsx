@@ -5,7 +5,6 @@ import { Navbar } from "@/components/Navbar";
 export default function Home() {
   return (
     <div className="min-h-screen">
-      <Navbar />
       <div className="font-[family-name:var(--font-geist-sans)]">
         <GameVoting />
       </div>

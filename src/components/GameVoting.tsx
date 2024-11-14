@@ -15,11 +15,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { motion } from "framer-motion";
-import PocketBase from 'pocketbase';
 import { useRouter } from 'next/navigation';
-
-// Initialize PocketBase at the top of the file (outside component)
-const pb = new PocketBase('http://127.0.0.1:8090'); // e.g., 'http://127.0.0.1:8090'
+import { useAuth, pb } from '@/lib/auth';
 
 // Add interfaces
 interface Vote {
@@ -60,16 +57,9 @@ export interface DiscordMetaData {
     verified: boolean
   }
 
-interface AuthUser {
-  id: string;
-  username: string;
-  avatarUrl?: string;
-  isManager: boolean;
-}
-
 const GameVotingApp = () => {
+  const { user } = useAuth();
   const router = useRouter();
-  const [user, setUser] = useState<AuthUser | null>(null);
   const [games, setGames] = useState<Game[]>([]);
   const [newGame, setNewGame] = useState("");
   const [sortOrder, setSortOrder] = useState("none");
@@ -231,60 +221,6 @@ const GameVotingApp = () => {
     setGames(sortedGames);
   };
 
-  // Add authentication check
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
-    if (pb.authStore.isValid) {
-      setUser({
-        id: pb.authStore.model?.id,
-        username: pb.authStore.model?.name,
-        avatarUrl: pb.authStore.model?.avatarUrl,
-        isManager: pb.authStore.model?.isManager || false
-      });
-    }
-  };
-
-  const login = async () => {
-    try {
-      const authData = await pb.collection('users').authWithOAuth2({
-        provider: 'discord',
-        scopes: ['identify', 'email'],
-      });
-      
-      if (authData.record) {
-        let userData: DiscordMetaData = authData.meta?.rawUser as DiscordMetaData;
-        const updatedUser = await pb.collection('users').update(authData.record.id, {
-          name: userData.global_name,
-          avatarUrl: authData.meta?.avatarUrl
-        });
-        setUser({
-          id: authData.record.id,
-          username: updatedUser.name,
-          avatarUrl: authData.record.avatarUrl,
-          isManager: updatedUser.isManager || false
-        });
-      } else {
-        console.error('No user record in auth response');
-        alert('Login failed: No user record found');
-      }
-    } catch (error) {
-      console.error('Login failed:', error);
-      if (error instanceof Error) {
-        alert(`Login failed: ${error.message}`);
-      } else {
-        alert('Login failed. Please check console for details.');
-      }
-    }
-  };
-
-  const logout = () => {
-    pb.authStore.clear();
-    setUser(null);
-  };
-
   // Helper function to calculate average vote
   const calculateAverageVote = (game: Game) => {
     if (!game.expand?.votes || game.expand.votes.length === 0) return 0;
@@ -294,32 +230,9 @@ const GameVotingApp = () => {
 
   return (
     <div className="max-w-6xl mx-auto p-6 mt-8">
-      {/* Add auth buttons */}
-      <div className="flex justify-end mb-4">
-        {user ? (
-          <div className="flex items-center gap-4">
-            {user.avatarUrl && (
-              <Image
-                src={user.avatarUrl}
-                alt={user.username}
-                width={32}
-                height={32}
-                className="rounded-full"
-              />
-            )}
-            <span>Welcome, {user.username}!</span>
-            <Button onClick={logout} variant="outline">Logout</Button>
-          </div>
-        ) : (
-          <Button onClick={login}>
-            Login with Discord
-          </Button>
-        )}
-      </div>
-
-      {/* Only show game management for logged-in users */}
+      {/* Manager controls */}
       {user && user.isManager && (
-        <div className="flex gap-4 items-center mb-8">
+        <div className="flex gap-4 items-center">
           <Input
             placeholder="Enter game name"
             value={newGame}
@@ -329,19 +242,23 @@ const GameVotingApp = () => {
           <Button onClick={handleAddGame}>
             <Plus className="mr-2 h-4 w-4" /> Add Game
           </Button>
-          <Select value={sortOrder} onValueChange={handleSort}>
-            <SelectTrigger className="w-[180px] ml-auto">
-              <SelectValue placeholder="Sort by..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">Default</SelectItem>
-              <SelectItem value="highest">Highest Rated</SelectItem>
-              <SelectItem value="lowest">Lowest Rated</SelectItem>
-              <SelectItem value="alphabetical">Alphabetical</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
       )}
+
+      {/* Sort controls available to all users */}
+      <div className="flex justify-end mb-8">
+        <Select value={sortOrder} onValueChange={handleSort}>
+          <SelectTrigger className="w-[180px] ml-auto">
+            <SelectValue placeholder="Sort by..." />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">Default</SelectItem>
+            <SelectItem value="highest">Highest Rated</SelectItem>
+            <SelectItem value="lowest">Lowest Rated</SelectItem>
+            <SelectItem value="alphabetical">Alphabetical</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
       <div className="grid grid-cols-1 gap-6">
         {games.map((game) => (
