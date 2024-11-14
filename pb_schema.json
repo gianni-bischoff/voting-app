@@ -66,8 +66,8 @@
       }
     ],
     "indexes": [],
-    "listRule": "id = @request.auth.id",
-    "viewRule": "id = @request.auth.id",
+    "listRule": "@request.auth.id != \"\"",
+    "viewRule": "@request.auth.id != \"\"",
     "createRule": "",
     "updateRule": "id = @request.auth.id",
     "deleteRule": "id = @request.auth.id",
@@ -172,13 +172,23 @@
           "maxSelect": 1,
           "displayFields": null
         }
+      },
+      {
+        "system": false,
+        "id": "zwgdgitm",
+        "name": "isActive",
+        "type": "bool",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {}
       }
     ],
     "indexes": [],
     "listRule": "@request.auth.id != \"\"",
     "viewRule": "@request.auth.id != \"\"",
     "createRule": "@request.auth.isManager = true",
-    "updateRule": "@request.auth.isManager = true",
+    "updateRule": "@request.auth.id != \"\"",
     "deleteRule": "@request.auth.isManager = true",
     "options": {}
   },
@@ -194,7 +204,7 @@
         "name": "user",
         "type": "relation",
         "required": false,
-        "presentable": false,
+        "presentable": true,
         "unique": false,
         "options": {
           "collectionId": "_pb_users_auth_",
@@ -222,16 +232,16 @@
       },
       {
         "system": false,
-        "id": "tx3srw5v",
+        "id": "thqhcxmf",
         "name": "score",
-        "type": "text",
+        "type": "number",
         "required": false,
         "presentable": false,
         "unique": false,
         "options": {
           "min": null,
           "max": null,
-          "pattern": ""
+          "noDecimal": false
         }
       }
     ],
