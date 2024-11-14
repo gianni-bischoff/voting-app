@@ -61,11 +61,12 @@ export const AddGameDialog: React.FC<AddGameDialogProps> = ({
             <Label htmlFor="description" className="text-right">
               Description
             </Label>
-            <Input
+            <textarea
               id="description"
               value={gameData.description}
               onChange={(e) => onGameDataChange({ ...gameData, description: e.target.value })}
-              className="col-span-3"
+              className="col-span-3 min-h-[100px] resize-none rounded-md border border-input bg-background px-3 py-2"
+              placeholder="Enter game description..."
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
