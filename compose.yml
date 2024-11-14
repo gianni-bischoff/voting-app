@@ -3,12 +3,14 @@ services:
     image: ghcr.io/muchobien/pocketbase:latest
     container_name: pocketbase_voting
     restart: unless-stopped
-    ports:
-      - "3700:8090"
     volumes:
       - pocketbase_data_voting:/pb_data
       - pocketbase_data_voting:/pb_public
       - pocketbase_data_voting:/pb_hooks
+    environment:
+      VIRTUAL_HOST: "pocketbase.wildblood.dev"
+      VIRTUAL_PORT: "8090"
+      CERT_NAME: "wildblood.dev"
     healthcheck:
       test: wget --no-verbose --tries=1 --spider http://localhost:8090/api/health || exit 1
       interval: 5s
@@ -22,11 +24,11 @@ services:
     container_name: nextjs_voting
     restart: unless-stopped
     environment:
-      - NODE_ENV=production
-      - NEXT_PUBLIC_POCKETBASE_URL=http://pocketbase:8090
-      - VIRTUAL_HOST="voting.wildblood.dev"
-      - VIRTUAL_PORT="3000"
-      - CERT_NAME="wildblood.dev"
+      NODE_ENV: "production"
+      NEXT_PUBLIC_POCKETBASE_URL: "http://pocketbase:8090"
+      VIRTUAL_HOST: "voting.wildblood.dev"
+      VIRTUAL_PORT: "3000"
+      CERT_NAME: "wildblood.dev"
     depends_on:
       pocketbase:
         condition: service_healthy
