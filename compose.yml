@@ -21,11 +21,12 @@ services:
       dockerfile: Dockerfile
     container_name: nextjs_voting
     restart: unless-stopped
-    ports:
-      - "3666:3000"
     environment:
       - NODE_ENV=production
       - NEXT_PUBLIC_POCKETBASE_URL=http://pocketbase:8090
+      - VIRTUAL_HOST: "voting.wildblood.dev"
+      - VIRTUAL_PORT: "3000"
+      - CERT_NAME: "wildblood.dev"
     depends_on:
       pocketbase:
         condition: service_healthy
