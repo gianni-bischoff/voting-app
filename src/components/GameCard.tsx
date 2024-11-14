@@ -84,8 +84,7 @@ export const GameCard: React.FC<GameCardProps> = ({
               onClick={() => window.open(game.url, '_blank')}
               className="self-end"
             >
-              <ExternalLink className="h-4 w-4 mr-2" />
-              Play Game
+              <ExternalLink className="h-4 w-4" />
             </Button>
 
             {user && user.isManager && (
