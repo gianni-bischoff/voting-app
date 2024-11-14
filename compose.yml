@@ -30,6 +30,12 @@ services:
     depends_on:
       pocketbase:
         condition: service_healthy
+    networks:
+      - nginx-proxy
+
+networks:
+  nginx-proxy:
+    name: nginx-proxy
 
 volumes:
   pocketbase_data_voting:
