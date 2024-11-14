@@ -21,6 +21,7 @@ const GameVotingApp = () => {
   const router = useRouter();
   const [games, setGames] = useState<Game[]>([]);
   const [newGameData, setNewGameData] = useState({
+    id: '',
     name: "",
     description: "",
     url: "",
@@ -30,6 +31,7 @@ const GameVotingApp = () => {
   const [userVotes, setUserVotes] = useState<Record<string, number>>({});
   const [voteTimeout, setVoteTimeout] = useState<NodeJS.Timeout | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogMode, setDialogMode] = useState<'add' | 'edit'>('add');
 
   useEffect(() => {
     loadInitialData();
@@ -92,7 +94,22 @@ const GameVotingApp = () => {
     }
   };
 
-  const handleAddGame = async () => {
+  const handleEdit = (gameId: string) => {
+    const gameToEdit = games.find(game => game.id === gameId);
+    if (gameToEdit) {
+      setNewGameData({
+        id: gameToEdit.id,
+        name: gameToEdit.name,
+        description: gameToEdit.description,
+        url: gameToEdit.url,
+        picture_url: gameToEdit.picture_url,
+      });
+      setDialogMode('edit');
+      setDialogOpen(true);
+    }
+  };
+
+  const handleSubmitGame = async () => {
     if (newGameData.name.trim()) {
       try {
         const data = {
@@ -101,27 +118,43 @@ const GameVotingApp = () => {
           url: newGameData.url,
           picture_url: newGameData.picture_url,
           submitted_by: user?.id || "",
-          votes: [],
-          averageVote: 0
         };
-        
-        const record = await pb.collection('games').create(data, {
-          requestKey: null
-        });
-        setGames([...games, {
-          id: record.id,
-          isActive: false,
-          ...data
-        }]);
+
+        if (dialogMode === 'edit') {
+          await pb.collection('games').update(newGameData.id, {
+            ...data,
+            requestKey: null
+          });
+          setGames(games.map(game => 
+            game.id === newGameData.id ? { ...game, ...data } : game
+          ));
+        } else {
+          const record = await pb.collection('games').create({
+            ...data,
+            votes: [],
+            averageVote: 0
+          }, {
+            requestKey: null
+          });
+          setGames([...games, {
+            id: record.id,
+            isActive: false,
+            ...data
+          }]);
+        }
+
         setNewGameData({
+          id: '',
           name: "",
           description: "",
           url: "",
           picture_url: "",
         });
+        setDialogMode('add');
         setDialogOpen(false);
+        await loadGames();
       } catch (error) {
-        console.error('Error adding game:', error);
+        console.error('Error submitting game:', error);
       }
     }
   };
@@ -155,19 +188,20 @@ const GameVotingApp = () => {
         const existingVote = await pb.collection('votes').getFirstListItem(`user = "${user.id}" && game = "${gameId}"`).catch(() => null);
 
         if (existingVote) {
-          let voteObject = await pb.collection('votes').update(existingVote.id, { score });
-          await pb.collection('games').update(gameId, {
-            requestKey: null,
-            "votes+": voteObject.id
-          });
+          await pb.collection('votes').update(existingVote.id, { score });         
         } else {
-          await pb.collection('votes').create({
+          let voteObject = await pb.collection('votes').create({
+            requestKey: null,
             user: user.id,
             game: gameId,
             score
           });
-        }
 
+          await pb.collection('games').update(gameId, {
+            requestKey: null,
+            "votes+": voteObject.id
+          });
+        }
         await loadGames();
       } catch (error) {
         console.error('Error updating vote:', error);
@@ -243,10 +277,23 @@ const GameVotingApp = () => {
           {user && user.isManager && (
             <AddGameDialog
               open={dialogOpen}
-              onOpenChange={setDialogOpen}
+              onOpenChange={(open) => {
+                setDialogOpen(open);
+                if (!open) {
+                  setNewGameData({
+                    id: '',
+                    name: "",
+                    description: "",
+                    url: "",
+                    picture_url: "",
+                  });
+                  setDialogMode('add');
+                }
+              }}
               gameData={newGameData}
               onGameDataChange={setNewGameData}
-              onAddGame={handleAddGame}
+              onSubmit={handleSubmitGame}
+              mode={dialogMode}
             />
           )}
         </div>
@@ -287,6 +334,7 @@ const GameVotingApp = () => {
             onVote={handleVote}
             onRemove={handleRemoveGame}
             onToggleActive={handleToggleActive}
+            onEdit={handleEdit}
             calculateAverageVote={calculateAverageVote}
           />
         ))}

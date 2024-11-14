@@ -15,13 +15,15 @@ interface AddGameDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   gameData: {
+    id?: string;
     name: string;
     description: string;
     url: string;
     picture_url: string;
   };
   onGameDataChange: (data: any) => void;
-  onAddGame: () => void;
+  onSubmit: () => void;
+  mode: 'add' | 'edit';
 }
 
 export const AddGameDialog: React.FC<AddGameDialogProps> = ({
@@ -29,7 +31,8 @@ export const AddGameDialog: React.FC<AddGameDialogProps> = ({
   onOpenChange,
   gameData,
   onGameDataChange,
-  onAddGame,
+  onSubmit,
+  mode,
 }) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -40,7 +43,7 @@ export const AddGameDialog: React.FC<AddGameDialogProps> = ({
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add New Game</DialogTitle>
+          <DialogTitle>{mode === 'add' ? 'Add New Game' : 'Edit Game'}</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
@@ -89,7 +92,9 @@ export const AddGameDialog: React.FC<AddGameDialogProps> = ({
           </div>
         </div>
         <div className="flex justify-end">
-          <Button onClick={onAddGame}>Add Game</Button>
+          <Button onClick={onSubmit}>
+            {mode === 'add' ? 'Add Game' : 'Save Changes'}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

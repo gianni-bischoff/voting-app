@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { Trash2, ExternalLink, ChevronDown } from 'lucide-react';
+import { Trash2, ExternalLink, ChevronDown, Pencil } from 'lucide-react';
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Vote, Game } from '@/types/game';
@@ -15,6 +15,7 @@ interface GameCardProps {
   onRemove: (gameId: string) => void;
   onToggleActive?: (gameId: string, isActive: boolean) => void;
   calculateAverageVote: (game: Game) => number;
+  onEdit?: (gameId: string) => void;
 }
 
 export const GameCard: React.FC<GameCardProps> = ({
@@ -25,6 +26,7 @@ export const GameCard: React.FC<GameCardProps> = ({
   onRemove,
   onToggleActive,
   calculateAverageVote,
+  onEdit,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -102,6 +104,14 @@ export const GameCard: React.FC<GameCardProps> = ({
                 {user && user.isManager && (
                   <>
                     <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onEdit?.(game.id)}
+                    >
+                      <Pencil className="h-4 w-4 mr-1" />
+                      <span className="hidden sm:inline">Edit</span>
+                    </Button>
+                    <Button
                       variant={game.isActive ? "default" : "outline"}
                       size="sm"
                       onClick={() => onToggleActive?.(game.id, !game.isActive)}
@@ -113,7 +123,7 @@ export const GameCard: React.FC<GameCardProps> = ({
                       size="sm"
                       onClick={() => onRemove(game.id)}
                     >
-                      <Trash2 className="h-4 w-4 mr-2" />
+                      <Trash2 className="h-4 w-4 mr-1" />
                       <span className="hidden sm:inline">Remove Game</span>
                     </Button>
                   </>
