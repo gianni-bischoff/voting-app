@@ -24,9 +24,9 @@ services:
     environment:
       - NODE_ENV=production
       - NEXT_PUBLIC_POCKETBASE_URL=http://pocketbase:8090
-      - VIRTUAL_HOST: "voting.wildblood.dev"
-      - VIRTUAL_PORT: "3000"
-      - CERT_NAME: "wildblood.dev"
+      - VIRTUAL_HOST="voting.wildblood.dev"
+      - VIRTUAL_PORT="3000"
+      - CERT_NAME="wildblood.dev"
     depends_on:
       pocketbase:
         condition: service_healthy
