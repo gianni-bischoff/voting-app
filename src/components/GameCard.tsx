@@ -143,8 +143,7 @@ export const GameCard: React.FC<GameCardProps> = ({
                         <AlertDialogHeader>
                           <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                           <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete {game.name} 
-                            and remove all associated votes.
+                            This action cannot be undone. This will permanently delete {game.name} and remove all associated votes.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
