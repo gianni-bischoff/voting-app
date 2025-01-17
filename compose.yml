@@ -4,19 +4,29 @@ services:
     container_name: pocketbase_voting
     restart: unless-stopped
     volumes:
-      - pocketbase_data_voting:/pb_data
+      - ./pocketbase:/pb_data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.voting_pocketbase-https.tls=true"
+      - "traefik.http.routers.voting_pocketbase-https.rule=Host(`pocketbase-voting.wildblood.dev`)"
+      - "traefik.http.routers.voting_pocketbase-https.entrypoints=websecure"
+      - "traefik.http.routers.voting_pocketbase-https.service=voting_pocketbase-svc"
+      - "traefik.http.services.voting_pocketbase-svc.loadBalancer.server.port=8090"
     environment:
       VIRTUAL_HOST: "pocketbase.wildblood.dev"
       VIRTUAL_PORT: "8090"
       CERT_NAME: "wildblood.dev"
     healthcheck:
-      test: wget --no-verbose --tries=1 --spider https://pocketbase.wildblood.dev/api/health || exit 1
+      test: wget --no-verbose --tries=1 --spider https://localhost:8090/api/health || exit 1
       interval: 5s
       timeout: 5s
       retries: 5
     networks:
-      - nginx-proxy
-
+      proxy:
+      voting:
+        aliases:
+          - db
   nextjs:
     build:
       context: .
@@ -24,21 +34,29 @@ services:
     pull_policy: build
     container_name: nextjs_voting
     restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.voting-https.tls=true"
+      - "traefik.http.routers.voting-https.rule=Host(`voting.wildblood.dev`)"
+      - "traefik.http.routers.voting-https.entrypoints=websecure"
+      - "traefik.http.routers.voting-https.service=voting-svc"
+      - "traefik.http.services.voting-svc.loadBalancer.server.port=3000"
     environment:
       NODE_ENV: "production"
-      NEXT_PUBLIC_POCKETBASE_URL: "https://pocketbase.wildblood.dev"
-      VIRTUAL_HOST: "voting.wildblood.dev"
-      VIRTUAL_PORT: "3000"
-      CERT_NAME: "wildblood.dev"
+      NEXT_PUBLIC_POCKETBASE_URL: "db:8090"
     depends_on:
       pocketbase:
         condition: service_healthy
     networks:
-      - nginx-proxy
+      - proxy
+      - voting
 
 networks:
-  nginx-proxy:
-    name: nginx-proxy
+  proxy:
+    external: true
+  voting:
+    name: voting
 
 volumes:
   pocketbase_data_voting:
