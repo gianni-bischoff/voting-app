@@ -4,7 +4,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import PocketBase from 'pocketbase';
 import { DiscordMetaData } from '@/types/discord';
 
-export const pb = new PocketBase(process.env.NEXT_PUBLIC_POCKETBASE_URL || 'https://pocketbase.wildblood.dev/');
+export const pb = new PocketBase(process.env.NEXT_PUBLIC_POCKETBASE_URL || 'https://pocketbase-voting.wildblood.dev/');
 
 export interface AuthUser {
   id: string;
